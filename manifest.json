@@ -1,11 +1,26 @@
 {
   "background_color": "#ffffff",
-  "dir": "ltr",
+  "dir": "rtl",
   "display": "standalone",
-  "name": "worktimes-nine.vercel",
+  "name": "worktimes-M",
+  "short_name": "worktimes-mm",
+  "description": "برنامه ثبت و محاسبه ساعت ورود و خروج کارکرد ماهانه",
   "orientation": "any",
   "scope": "/",
-  "short_name": "worktimes-nine.vercel",
   "start_url": "/",
-  "theme_color": "#ffffff"
+  "theme_color": "#ffffff",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/192/2387/2387679.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2387/2387679.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
 }
