@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#4f46e5">
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js');
+  }
+</script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>سامانه ردیابی ساعات کاری (جلالی)</title>
+    
+    <!-- Vazirmatn Font -->
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet" type="text/css" />
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Persian Datepicker & Jalali Moment CDN (jalaali-js) -->
+    <script src="https://cdn.jsdelivr.net/npm/jalaali-js/dist/jalaali.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Vazirmatn', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        body {
+            font-family: 'Vazirmatn', sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+        }
+        /* Custom scrollbar for mobile usability */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased">
+
+    <!-- Header -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
+        <div class="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <div class="bg-brand-600 text-white p-2 rounded-xl shadow-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg text-slate-800 leading-tight">ساعت‌کار من</h1>
+                    <p class="text-xs text-slate-500">مدیریت هوشمند ساعات کاری (شمسی)</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <button onclick="openSettingsModal()" class="p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition" title="تنظیمات هدف و شیفت">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 max-w-4xl w-full mx-auto px-4 py-6 space-y-6">
+
+        <!-- Month Filter Bar -->
+        <div class="bg-white p-4 rounded-2xl shadow-xs border border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="w-full sm:w-auto flex items-center gap-2">
+                <span class="text-sm font-medium text-slate-600 whitespace-nowrap">انتخاب ماه:</span>
+                <select id="filterMonth" onchange="changeFilterMonth()" class="w-full sm:w-48 bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    <!-- Populated dynamically -->
+                </select>
+            </div>
+            
+            <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+                <button onclick="openEntryModal()" class="w-full sm:w-auto bg-brand-600 hover:bg-brand-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium shadow-sm transition flex items-center justify-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                    ثبت ساعت جدید
+                </button>
+            </div>
+        </div>
+
+        <!-- Dashboard Summary Cards -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="bg-white p-4 rounded-2xl shadow-xs border border-slate-200">
+                <div class="text-xs text-slate-500 font-medium mb-1">مجموع کارکرد ماه</div>
+                <div id="summaryTotalHours" class="text-xl font-bold text-slate-800">0 ساعت</div>
+                <div id="summaryTotalMinutes" class="text-xs text-slate-400 mt-0.5">0 دقیقه</div>
+            </div>
+            
+            <div class="bg-white p-4 rounded-2xl shadow-xs border border-slate-200">
+                <div class="text-xs text-slate-500 font-medium mb-1">اضافه کاری / کسر کار</div>
+                <div id="summaryOvertime" class="text-xl font-bold text-emerald-600">0 ساعت</div>
+                <div id="summaryOvertimeSub" class="text-xs text-slate-400 mt-0.5">نسبت به استاندارد</div>
+            </div>
+
+            <div class="bg-white p-4 rounded-2xl shadow-xs border border-slate-200">
+                <div class="text-xs text-slate-500 font-medium mb-1">روزهای کاری ثبت شده</div>
+                <div id="summaryDaysCount" class="text-xl font-bold text-slate-800">0 روز</div>
+                <div class="text-xs text-slate-400 mt-0.5">در این ماه</div>
+            </div>
+
+            <div class="bg-white p-4 rounded-2xl shadow-xs border border-slate-200">
+                <div class="text-xs text-slate-500 font-medium mb-1">میانگین کارکرد روزانه</div>
+                <div id="summaryAvgHours" class="text-xl font-bold text-slate-800">0 ساعت</div>
+                <div class="text-xs text-slate-400 mt-0.5">در روزهای کاری</div>
+            </div>
+        </div>
+
+        <!-- Progress Bar Card -->
+        <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-200 space-y-3">
+            <div class="flex justify-between items-center text-sm">
+                <span class="font-medium text-slate-700">پیشرفت تا هدف ماهانه</span>
+                <span id="progressText" class="font-bold text-brand-600">0 / 160 ساعت</span>
+            </div>
+            <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
+                <div id="progressBar" class="bg-brand-600 h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <!-- History & Logs Table Section -->
+        <div class="bg-white rounded-2xl shadow-xs border border-slate-200 overflow-hidden">
+            <div class="p-4 border-b border-slate-100 flex justify-between items-center">
+                <h3 class="font-bold text-slate-800 text-sm md:text-base">تاریخچه ورودهای این ماه</h3>
+                <span id="logCountBadge" class="bg-slate-100 text-slate-600 text-xs px-2.5 py-1 rounded-full font-medium">0 مورد</span>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full text-right border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50 text-slate-500 text-xs font-semibold border-b border-slate-100">
+                            <th class="py-3 px-4">تاریخ</th>
+                            <th class="py-3 px-4">ورود - خروج</th>
+                            <th class="py-3 px-4">استراحت</th>
+                            <th class="py-3 px-4">مجموع کارکرد</th>
+                            <th class="py-3 px-4">یادداشت</th>
+                            <th class="py-3 px-4 text-center">عملیات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logsTableBody" class="divide-y divide-slate-100 text-sm">
+                        <!-- Populated by JS -->
+                        <tr>
+                            <td colspan="6" class="text-center py-8 text-slate-400">هیچ رکوردی برای این ماه ثبت نشده است.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Data Tools / Backup & Restore -->
+        <div class="bg-white p-4 rounded-2xl shadow-xs border border-slate-200 flex flex-wrap items-center justify-between gap-3">
+            <div class="text-xs text-slate-500">
+                مدیریت داده‌ها و پشتیبان‌گیری امن در مرورگر شما
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+                <button onclick="exportJSON()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-xl text-xs font-medium transition flex items-center gap-1.5">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    پشتیبان JSON
+                </button>
+                <button onclick="exportCSV()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-xl text-xs font-medium transition flex items-center gap-1.5">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    خروجی CSV
+                </button>
+                <label class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-xl text-xs font-medium transition flex items-center gap-1.5 cursor-pointer">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                    </svg>
+                    بازیابی
+                    <input type="file" id="importFile" accept=".json" onchange="importJSON(event)" class="hidden">
+                </label>
+                <button onclick="openClearModal()" class="bg-rose-50 hover:bg-rose-100 text-rose-600 px-3 py-1.5 rounded-xl text-xs font-medium transition flex items-center gap-1.5">
+                    حذف همه
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="text-center py-6 text-xs text-slate-400">
+        سیستم ردیابی ساعات کاری | تقویم شمسی (جلالی)
+    </footer>
+
+    <!-- ENTRY MODAL -->
+    <div id="entryModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl shadow-xl max-w-md w-full p-6 space-y-5 animate-in fade-in zoom-in duration-200">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <h3 id="modalTitle" class="font-bold text-slate-800 text-base">ثبت کارکرد روزانه</h3>
+                <button onclick="closeEntryModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <form id="entryForm" onsubmit="saveEntry(event)" class="space-y-4">
+                <input type="hidden" id="entryId">
+
+                <!-- Jalali Date Selector inputs -->
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">تاریخ (شمسی)</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <div>
+                            <select id="jalaliYear" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                                <!-- Populated -->
+                            </select>
+                        </div>
+                        <div>
+                            <select id="jalaliMonth" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                                <option value="1">فروردین</option>
+                                <option value="2">اردیبهشت</option>
+                                <option value="3">خرداد</option>
+                                <option value="4">تیر</option>
+                                <option value="5">مرداد</option>
+                                <option value="6">شهریور</option>
+                                <option value="7">مهر</option>
+                                <option value="8">آبان</option>
+                                <option value="9">آذر</option>
+                                <option value="10">دی</option>
+                                <option value="11">بهمن</option>
+                                <option value="12">اسفند</option>
+                            </select>
+                        </div>
+                        <div>
+                            <select id="jalaliDay" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                                <!-- Populated -->
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Times -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 mb-1">ساعت ورود (شروع)</label>
+                        <input type="time" id="startTime" required value="08:00" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 mb-1">ساعت خروج (پایان)</label>
+                        <input type="time" id="endTime" required value="17:00" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                    </div>
+                </div>
+
+                <!-- Break & Overtime Adjustment -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 mb-1">استراحت / ناهار (دقیقه)</label>
+                        <input type="number" id="breakMinutes" min="0" max="300" value="60" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 mb-1">اضافه کاری دستی (دقیقه)</label>
+                        <input type="number" id="manualOvertime" min="0" max="600" value="0" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                    </div>
+                </div>
+
+                <!-- Note -->
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">یادداشت / پروژه</label>
+                    <input type="text" id="entryNote" placeholder="مثلاً: پروژه الف، شیفت صبح..." class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                </div>
+
+                <div class="pt-3 flex gap-2">
+                    <button type="submit" class="flex-1 bg-brand-600 hover:bg-brand-700 text-white font-medium py-2.5 rounded-xl text-sm transition shadow-sm">ذخیره رکورد</button>
+                    <button type="button" onclick="closeEntryModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-4 py-2.5 rounded-xl text-sm transition">انصراف</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- SETTINGS MODAL -->
+    <div id="settingsModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl shadow-xl max-w-sm w-full p-6 space-y-4 animate-in fade-in zoom-in duration-200">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <h3 class="font-bold text-slate-800 text-base">تنظیمات اهداف ماهانه</h3>
+                <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">هدف ساعت کاری ماهانه (ساعت)</label>
+                    <input type="number" id="settingMonthlyGoal" value="160" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">استاندارد کارکرد روزانه (ساعت)</label>
+                    <input type="number" id="settingDailyStandard" value="8" step="0.5" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                </div>
+            </div>
+
+            <div class="pt-3 flex gap-2">
+                <button onclick="saveSettings()" class="flex-1 bg-brand-600 hover:bg-brand-700 text-white font-medium py-2.5 rounded-xl text-sm transition shadow-sm">ذخیره تنظیمات</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CLEAR DATA CONFIRMATION MODAL -->
+    <div id="clearModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl shadow-xl max-w-sm w-full p-6 space-y-4 text-center animate-in fade-in zoom-in duration-200">
+            <div class="w-12 h-12 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center mx-auto mb-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+            </div>
+            <h3 class="font-bold text-slate-800 text-base">حذف کامل اطلاعات؟</h3>
+            <p class="text-xs text-slate-500">تمامی اطلاعات سوابق کاری شما از حافظه مرورگر پاک خواهد شد. این عمل غیرقابل بازگشت است مگر اینکه پشتیبان تهیه کرده باشید.</p>
+
+            <div class="pt-3 flex gap-2">
+                <button onclick="clearAllData()" class="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-medium py-2.5 rounded-xl text-sm transition shadow-sm">بله، حذف شود</button>
+                <button onclick="closeClearModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium py-2.5 rounded-xl text-sm transition">انصراف</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Logic Script -->
+    <script>
+        // Month names in Persian
+        const persianMonths = [
+            'فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور',
+            'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند'
+        ];
+
+        // State variables
+        let entries = [];
+        let settings = {
+            monthlyGoal: 160,
+            dailyStandard: 8
+        };
+
+        // Initialize app on DOMContentLoaded
+        document.addEventListener('DOMContentLoaded', () => {
+            loadFromLocalStorage();
+            initDateSelectors();
+            initMonthFilter();
+            renderApp();
+        });
+
+        // Load data from localStorage
+        function loadFromLocalStorage() {
+            const savedEntries = localStorage.getItem('work_hours_entries');
+            if (savedEntries) {
+                try { entries = JSON.parse(savedEntries); } catch (e) { entries = []; }
+            }
+            const savedSettings = localStorage.getItem('work_hours_settings');
+            if (savedSettings) {
+                try { settings = JSON.parse(savedSettings); } catch (e) {}
+            }
+        }
+
+        // Save data to localStorage
+        function saveToLocalStorage() {
+            localStorage.setItem('work_hours_entries', JSON.stringify(entries));
+            localStorage.setItem('work_hours_settings', JSON.stringify(settings));
+        }
+
+        // Initialize Jalali Date Selectors in Modal
+        function initDateSelectors() {
+            const gDate = new Date();
+            const jDate = jalaali.toJalaali(gDate);
+
+            // Populate Years (current year +/- 2 years)
+            const yearSelect = document.getElementById('jalaliYear');
+            yearSelect.innerHTML = '';
+            for (let y = jDate.jy - 2; y <= jDate.jy + 1; y++) {
+                const opt = document.createElement('option');
+                opt.value = y;
+                opt.textContent = y;
+                if (y === jDate.jy) opt.selected = true;
+                yearSelect.appendChild(opt);
+            }
+
+            document.getElementById('jalaliMonth').value = jDate.jm;
+            populateDays(jDate.jy, jDate.jm, jDate.jd);
+
+            // Event listeners to update days length when year/month changes
+            document.getElementById('jalaliYear').addEventListener('change', updateDaysDropdown);
+            document.getElementById('jalaliMonth').addEventListener('change', updateDaysDropdown);
+        }
+
+        function populateDays(jy, jm, selectedDay = 1) {
+            const daySelect = document.getElementById('jalaliDay');
+            daySelect.innerHTML = '';
+            const daysInMonth = jalaali.jalaaliMonthLength(jy, jm);
+            for (let d = 1; d <= daysInMonth; d++) {
+                const opt = document.createElement('option');
+                opt.value = d;
+                opt.textContent = d;
+                if (d === selectedDay) opt.selected = true;
+                daySelect.appendChild(opt);
+            }
+        }
+
+        function updateDaysDropdown() {
+            const jy = parseInt(document.getElementById('jalaliYear').value);
+            const jm = parseInt(document.getElementById('jalaliMonth').value);
+            const daySelect = document.getElementById('jalaliDay');
+            const currentSelected = parseInt(daySelect.value) || 1;
+            populateDays(jy, jm, currentSelected);
+        }
+
+        // Initialize Filter Dropdown
+        function initMonthFilter() {
+            const gDate = new Date();
+            const jDate = jalaali.toJalaali(gDate);
+            const filterSelect = document.getElementById('filterMonth');
+            filterSelect.innerHTML = '';
+
+            let optionsSet = new Set();
+            optionsSet.add(`${jDate.jy}-${jDate.jm}`);
+            
+            entries.forEach(e => {
+                optionsSet.add(`${e.jy}-${e.jm}`);
+            });
+
+            let sortedOpts = Array.from(optionsSet).sort((a,b) => {
+                let [y1, m1] = a.split('-').map(Number);
+                let [y2, m2] = b.split('-').map(Number);
+                if (y1 !== y2) return y2 - y1;
+                return m2 - m1;
+            });
+
+            sortedOpts.forEach(item => {
+                let [y, m] = item.split('-').map(Number);
+                const opt = document.createElement('option');
+                opt.value = item;
+                opt.textContent = `${persianMonths[m - 1]} ${y}`;
+                filterSelect.appendChild(opt);
+            });
+
+            filterSelect.value = `${jDate.jy}-${jDate.jm}`;
+            if (!filterSelect.value && filterSelect.options.length > 0) {
+                filterSelect.selectedIndex = 0;
+            }
+        }
+
+        function changeFilterMonth() {
+            renderApp();
+        }
+
+        // Modal Controls
+        function openEntryModal(editId = null) {
+            document.getElementById('entryId').value = '';
+            document.getElementById('entryForm').reset();
+            document.getElementById('modalTitle').textContent = 'ثبت ساعت کاری روزانه';
+            document.getElementById('entryModal').classList.remove('hidden');
+            
+            if (editId) {
+                const item = entries.find(e => e.id === editId);
+                if (item) {
+                    document.getElementById('modalTitle').textContent = 'ویرایش ساعت کاری';
+                    document.getElementById('entryId').value = item.id;
+                    document.getElementById('jalaliYear').value = item.jy;
+                    document.getElementById('jalaliMonth').value = item.jm;
+                    populateDays(item.jy, item.jm, item.jd);
+                    document.getElementById('jalaliDay').value = item.jd;
+                    document.getElementById('startTime').value = item.startTime;
+                    document.getElementById('endTime').value = item.endTime;
+                    document.getElementById('breakMinutes').value = item.breakMinutes;
+                    document.getElementById('manualOvertime').value = item.manualOvertime || 0;
+                    document.getElementById('entryNote').value = item.note || '';
+                }
+            } else {
+                initDateSelectors();
+            }
+        }
+
+        function closeEntryModal() {
+            document.getElementById('entryModal').classList.add('hidden');
+        }
+
+        function openSettingsModal() {
+            document.getElementById('settingMonthlyGoal').value = settings.monthlyGoal;
+            document.getElementById('settingDailyStandard').value = settings.dailyStandard;
+            document.getElementById('settingsModal').classList.remove('hidden');
+        }
+
+        function closeSettingsModal() {
+            document.getElementById('settingsModal').classList.add('hidden');
+        }
+
+        function saveSettings() {
+            settings.monthlyGoal = parseFloat(document.getElementById('settingMonthlyGoal').value) || 160;
+            settings.dailyStandard = parseFloat(document.getElementById('settingDailyStandard').value) || 8;
+            saveToLocalStorage();
+            closeSettingsModal();
+            renderApp();
+        }
+
+        function openClearModal() {
+            document.getElementById('clearModal').classList.remove('hidden');
+        }
+
+        function closeClearModal() {
+            document.getElementById('clearModal').classList.add('hidden');
+        }
+
+        function clearAllData() {
+            entries = [];
+            saveToLocalStorage();
+            closeClearModal();
+            initMonthFilter();
+            renderApp();
+        }
+
+        function timeToMinutes(timeStr) {
+            if (!timeStr) return 0;
+            const [h, m] = timeStr.split(':').map(Number);
+            return h * 60 + m;
+        }
+
+        function formatMinutesToHours(totalMinutes) {
+            const isNegative = totalMinutes < 0;
+            const absM = Math.abs(totalMinutes);
+            const hours = Math.floor(absM / 60);
+            const mins = absM % 60;
+            let str = `${hours} ساعت`;
+            if (mins > 0) str += ` و ${mins} دقیقه`;
+            return isNegative ? `-${str}` : str;
+        }
+
+        function saveEntry(e) {
+            e.preventDefault();
+            const id = document.getElementById('entryId').value || 'entry_' + Date.now();
+            const jy = parseInt(document.getElementById('jalaliYear').value);
+            const jm = parseInt(document.getElementById('jalaliMonth').value);
+            const jd = parseInt(document.getElementById('jalaliDay').value);
+            const startTime = document.getElementById('startTime').value;
+            const endTime = document.getElementById('endTime').value;
+            const breakMinutes = parseInt(document.getElementById('breakMinutes').value) || 0;
+            const manualOvertime = parseInt(document.getElementById('manualOvertime').value) || 0;
+            const note = document.getElementById('entryNote').value.trim();
+
+            // Calculate net minutes with overnight handling
+            let sMin = timeToMinutes(startTime);
+            let eMin = timeToMinutes(endTime);
+            if (eMin < sMin) {
+                eMin += 24 * 60; // Overnight shift
+            }
+            let gross = eMin - sMin;
+            let netMinutes = gross - breakMinutes + manualOvertime;
+            if (netMinutes < 0) netMinutes = 0;
+
+            const entryData = {
+                id, jy, jm, jd, startTime, endTime, breakMinutes, manualOvertime, note, netMinutes
+            };
+
+            const existingIndex = entries.findIndex(item => item.id === id);
+            if (existingIndex >= 0) {
+                entries[existingIndex] = entryData;
+            } else {
+                entries.push(entryData);
+            }
+
+            saveToLocalStorage();
+            closeEntryModal();
+            initMonthFilter();
+            renderApp();
+        }
+
+        function deleteEntry(id) {
+            if (confirm('آیا از حذف این رکورد اطمینان دارید؟')) {
+                entries = entries.filter(e => e.id !== id);
+                saveToLocalStorage();
+                renderApp();
+            }
+        }
+
+        function renderApp() {
+            const filterVal = document.getElementById('filterMonth').value;
+            if (!filterVal) return;
+            const [fYear, fMonth] = filterVal.split('-').map(Number);
+
+            const filteredEntries = entries.filter(e => e.jy === fYear && e.jm === fMonth);
+            filteredEntries.sort((a, b) => {
+                if (a.jd !== b.jd) return a.jd - b.jd;
+                return a.startTime.localeCompare(b.startTime);
+            });
+
+            let totalNetMinutes = 0;
+            filteredEntries.forEach(e => {
+                totalNetMinutes += e.netMinutes;
+            });
+
+            const totalWorkedDays = filteredEntries.length;
+            const avgMinutes = totalWorkedDays > 0 ? Math.round(totalNetMinutes / totalWorkedDays) : 0;
+
+            const standardMinutesForDays = totalWorkedDays * settings.dailyStandard * 60;
+            const overtimeMinutes = totalNetMinutes - standardMinutesForDays;
+
+            // Update Summary Cards
+            const totalH = Math.floor(totalNetMinutes / 60);
+            const totalM = totalNetMinutes % 60;
+            document.getElementById('summaryTotalHours').textContent = `${totalH} ساعت`;
+            document.getElementById('summaryTotalMinutes').textContent = `${totalM} دقیقه`;
+
+            const otEl = document.getElementById('summaryOvertime');
+            const otSubEl = document.getElementById('summaryOvertimeSub');
+            if (overtimeMinutes >= 0) {
+                otEl.textContent = formatMinutesToHours(overtimeMinutes);
+                otEl.className = 'text-xl font-bold text-emerald-600';
+                otSubEl.textContent = 'اضافه کاری';
+            } else {
+                otEl.textContent = formatMinutesToHours(overtimeMinutes);
+                otEl.className = 'text-xl font-bold text-rose-600';
+                otSubEl.textContent = 'کسر کار';
+            }
+
+            document.getElementById('summaryDaysCount').textContent = `${totalWorkedDays} روز`;
+            document.getElementById('summaryAvgHours').textContent = formatMinutesToHours(avgMinutes);
+
+            // Progress bar against goal
+            const goalMinutes = settings.monthlyGoal * 60;
+            let progressPercent = goalMinutes > 0 ? Math.min(100, Math.round((totalNetMinutes / goalMinutes) * 100)) : 0;
+            document.getElementById('progressBar').style.width = `${progressPercent}%`;
+            document.getElementById('progressText').textContent = `${totalH} / ${settings.monthlyGoal} ساعت (${progressPercent}%)`;
+
+            // Render Table
+            const tbody = document.getElementById('logsTableBody');
+            tbody.innerHTML = '';
+            document.getElementById('logCountBadge').textContent = `${filteredEntries.length} مورد`;
+
+            if (filteredEntries.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-slate-400">هیچ رکوردی برای این ماه ثبت نشده است.</td></tr>`;
+                return;
+            }
+
+            filteredEntries.forEach(e => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-50/80 transition';
+                tr.innerHTML = `
+                    <td class="py-3 px-4 font-medium text-slate-700">${e.jd} ${persianMonths[e.jm - 1]} ${e.jy}</td>
+                    <td class="py-3 px-4 text-slate-600 font-mono" dir="ltr"><span class="text-emerald-600 font-semibold">${e.startTime}</span> → <span class="text-rose-600 font-semibold">${e.endTime}</span></td>
+                    <td class="py-3 px-4 text-slate-500">${e.breakMinutes} دقیقه</td>
+                    <td class="py-3 px-4 font-bold text-brand-600">${formatMinutesToHours(e.netMinutes)}</td>
+                    <td class="py-3 px-4 text-slate-500 text-xs truncate max-w-[150px]">${e.note || '-'}</td>
+                    <td class="py-3 px-4 text-center">
+                        <div class="flex items-center justify-center gap-1">
+                            <button onclick="openEntryModal('${e.id}')" class="p-1.5 text-slate-400 hover:text-brand-600 rounded-lg transition" title="ویرایش">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                            </button>
+                            <button onclick="deleteEntry('${e.id}')" class="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg transition" title="حذف">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Export / Import functionality
+        function exportJSON() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ entries, settings }, null, 2));
+            const dlAnchor = document.createElement('a');
+            dlAnchor.setAttribute("href", dataStr);
+            dlAnchor.setAttribute("download", `work_hours_backup_${new Date().toISOString().slice(0,10)}.json`);
+            document.body.appendChild(dlAnchor);
+            dlAnchor.click();
+            dlAnchor.remove();
+        }
+
+        function exportCSV() {
+            let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
+            csvContent += "ID,Year,Month,Day,StartTime,EndTime,BreakMinutes,ManualOvertime,NetMinutes,Note\r\n";
+            entries.forEach(e => {
+                let row = [e.id, e.jy, e.jm, e.jd, e.startTime, e.endTime, e.breakMinutes, e.manualOvertime || 0, e.netMinutes, `"${(e.note || '').replace(/"/g, '""')}"`];
+                csvContent += row.join(",") + "\r\n";
+            });
+            const encodedUri = encodeURI(csvContent);
+            const dlAnchor = document.createElement('a');
+            dlAnchor.setAttribute("href", encodedUri);
+            dlAnchor.setAttribute("download", `work_hours_${new Date().toISOString().slice(0,10)}.csv`);
+            document.body.appendChild(dlAnchor);
+            dlAnchor.click();
+            dlAnchor.remove();
+        }
+
+        function importJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const parsed = JSON.parse(e.target.result);
+                    if (parsed.entries && Array.isArray(parsed.entries)) {
+                        entries = parsed.entries;
+                        if (parsed.settings) settings = parsed.settings;
+                        saveToLocalStorage();
+                        initMonthFilter();
+                        renderApp();
+                        alert('اطلاعات با موفقیت بازیابی شد.');
+                    } else {
+                        alert('فرمت فایل پشتیبان نامعتبر است.');
+                    }
+                } catch (err) {
+                    alert('خطا در خواندن فایل JSON.');
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+    </script>
+</body>
+</html>
